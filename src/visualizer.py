@@ -76,39 +76,76 @@ class DataVisualizer:
             print("No data available for level distribution chart")
             return None
         
-        plt.figure(figsize=(10, 6))
+        plt.figure(figsize=(12, 8))  # Increased figure size for better clarity
         level_counts = level_data[level_col].value_counts().sort_index()
-        bars = plt.bar(level_counts.index, level_counts.values, color='skyblue')
+        total_count = len(level_data)
+        bars = plt.bar(level_counts.index, level_counts.values, color='skyblue', edgecolor='black', linewidth=0.5)
         
         # Set labels based on language
         if language == "zh":
-            plt.title('病例等级分布', fontsize=16, fontweight='bold')
-            plt.xlabel('等级', fontsize=14)
-            plt.ylabel('病例数量', fontsize=14)
+            plt.title('病例等级分布', fontsize=18, fontweight='bold', pad=20)
+            plt.xlabel('等级', fontsize=16)
+            plt.ylabel('病例数量', fontsize=16)
         else:
-            plt.title('Distribution of Cases by Level', fontsize=16, fontweight='bold')
-            plt.xlabel('Level', fontsize=14)
-            plt.ylabel('Number of Cases', fontsize=14)
+            plt.title('Distribution of Cases by Level', fontsize=18, fontweight='bold', pad=20)
+            plt.xlabel('Level', fontsize=16)
+            plt.ylabel('Number of Cases', fontsize=16)
         
-        plt.grid(axis='y', alpha=0.3)
+        # Add a light grey grid
+        plt.grid(axis='y', color='lightgrey', linestyle='-', linewidth=0.5, alpha=0.7)
         
-        # Add value labels on bars
+        # Add value labels and percentage on bars
         for bar in bars:
             height = bar.get_height()
-            plt.text(bar.get_x() + bar.get_width()/2., height,
-                     f'{int(height)}',
-                     ha='center', va='bottom', fontsize=12)
+            percentage = (height / total_count) * 100
+            plt.text(bar.get_x() + bar.get_width()/2., height + max(level_counts.values) * 0.01,  # Add a small offset
+                     f'{int(height)}\n({percentage:.1f}%)',
+                     ha='center', va='bottom', fontsize=12)  # Increased font size
+        
+        # Set y-axis to start from 0 and add a little extra space at the top for the labels
+        plt.ylim(0, max(level_counts.values) * 1.15)  # Add 15% more space for labels
+        
+        # Set white background
+        ax = plt.gca()
+        ax.set_facecolor('white')
+        # Add black border
+        for spine in ax.spines.values():
+            spine.set_edgecolor('black')
+            spine.set_linewidth(1.2)
         
         plt.tight_layout()
         
         # Save chart
         lang_suffix = "_zh" if language == "zh" else ""
         filename = f'level_distribution{lang_suffix}.png'
-        filepath = os.path.join(self.output_dir, filename)
+        
+        # Try to use dialog for renaming if tkinter is available
+        try:
+            import tkinter as tk
+            from tkinter import simpledialog
+            root = tk.Tk()
+            root.withdraw()  # Hide the main window
+            renamed_filename = simpledialog.askstring("重命名文件", "请输入文件名:", initialvalue=filename)
+            root.destroy()
+            
+            if renamed_filename is None:  # User cancelled
+                print("File save cancelled by user")
+                plt.close()
+                return None
+            
+            if not renamed_filename.endswith('.png'):
+                renamed_filename += '.png'
+                
+            filepath = os.path.join(self.output_dir, renamed_filename)
+        except ImportError:
+            # If tkinter is not available, use the default filename
+            print("Warning: tkinter not available, using default filename")
+            filepath = os.path.join(self.output_dir, filename)
+        
         plt.savefig(filepath, dpi=300, bbox_inches='tight')
         plt.close()
         
-        print(f"Created level distribution chart: {filename}")
+        print(f"Created level distribution chart: {filepath}")
         return filepath
     
     def create_difficulty_source_chart(self, language: str = "en") -> Optional[str]:
@@ -131,40 +168,77 @@ class DataVisualizer:
             print("No data available for difficulty source distribution chart")
             return None
         
-        plt.figure(figsize=(10, 6))
+        plt.figure(figsize=(12, 8))  # Increased figure size for better clarity
         difficulty_counts = difficulty_data[difficulty_col].value_counts()
-        bars = plt.bar(difficulty_counts.index, difficulty_counts.values, color='lightcoral')
+        total_count = len(difficulty_data)
+        bars = plt.bar(difficulty_counts.index, difficulty_counts.values, color='lightcoral', edgecolor='black', linewidth=0.5)
         
         # Set labels based on language
         if language == "zh":
-            plt.title('主要困难来源分布', fontsize=16, fontweight='bold')
-            plt.xlabel('主要困难来源', fontsize=14)
-            plt.ylabel('病例数量', fontsize=14)
+            plt.title('主要困难来源分布', fontsize=18, fontweight='bold', pad=20)
+            plt.xlabel('主要困难来源', fontsize=16)
+            plt.ylabel('病例数量', fontsize=16)
         else:
-            plt.title('Distribution of Cases by Primary Difficulty Source', fontsize=16, fontweight='bold')
-            plt.xlabel('Primary Difficulty Source', fontsize=14)
-            plt.ylabel('Number of Cases', fontsize=14)
+            plt.title('Distribution of Cases by Primary Difficulty Source', fontsize=18, fontweight='bold', pad=20)
+            plt.xlabel('Primary Difficulty Source', fontsize=16)
+            plt.ylabel('Number of Cases', fontsize=16)
         
-        plt.grid(axis='y', alpha=0.3)
+        # Add a light grey grid
+        plt.grid(axis='y', color='lightgrey', linestyle='-', linewidth=0.5, alpha=0.7)
         plt.xticks(rotation=45, ha='right')
         
-        # Add value labels on bars
+        # Add value labels and percentage on bars
         for bar in bars:
             height = bar.get_height()
-            plt.text(bar.get_x() + bar.get_width()/2., height,
-                     f'{int(height)}',
-                     ha='center', va='bottom', fontsize=12)
+            percentage = (height / total_count) * 100
+            plt.text(bar.get_x() + bar.get_width()/2., height + max(difficulty_counts.values) * 0.01,  # Add a small offset
+                     f'{int(height)}\n({percentage:.1f}%)',
+                     ha='center', va='bottom', fontsize=12)  # Increased font size
+        
+        # Set y-axis to start from 0 and add a little extra space at the top for the labels
+        plt.ylim(0, max(difficulty_counts.values) * 1.15)  # Add 15% more space for labels
+        
+        # Set white background
+        ax = plt.gca()
+        ax.set_facecolor('white')
+        # Add black border
+        for spine in ax.spines.values():
+            spine.set_edgecolor('black')
+            spine.set_linewidth(1.2)
         
         plt.tight_layout()
         
         # Save chart
         lang_suffix = "_zh" if language == "zh" else ""
         filename = f'difficulty_source_distribution{lang_suffix}.png'
-        filepath = os.path.join(self.output_dir, filename)
+        
+        # Try to use dialog for renaming if tkinter is available
+        try:
+            import tkinter as tk
+            from tkinter import simpledialog
+            root = tk.Tk()
+            root.withdraw()  # Hide the main window
+            renamed_filename = simpledialog.askstring("重命名文件", "请输入文件名:", initialvalue=filename)
+            root.destroy()
+            
+            if renamed_filename is None:  # User cancelled
+                print("File save cancelled by user")
+                plt.close()
+                return None
+            
+            if not renamed_filename.endswith('.png'):
+                renamed_filename += '.png'
+                
+            filepath = os.path.join(self.output_dir, renamed_filename)
+        except ImportError:
+            # If tkinter is not available, use the default filename
+            print("Warning: tkinter not available, using default filename")
+            filepath = os.path.join(self.output_dir, filename)
+        
         plt.savefig(filepath, dpi=300, bbox_inches='tight')
         plt.close()
         
-        print(f"Created difficulty source distribution chart: {filename}")
+        print(f"Created difficulty source distribution chart: {filepath}")
         return filepath
     
     def create_difficulty_by_level_chart(self, language: str = "en") -> Optional[str]:
@@ -189,7 +263,7 @@ class DataVisualizer:
             print("No data available for difficulty source by level chart")
             return None
         
-        plt.figure(figsize=(12, 8))
+        plt.figure(figsize=(14, 10))  # Increased figure size for better clarity
         difficulty_level_crosstab = pd.crosstab(cross_data[level_col], cross_data[difficulty_col])
         
         # Set labels based on language
@@ -206,19 +280,42 @@ class DataVisualizer:
         
         sns.heatmap(difficulty_level_crosstab, annot=True, fmt='d', cmap='Blues', 
                    cbar_kws={'label': cbar_label})
-        plt.title(title, fontsize=16, fontweight='bold')
-        plt.xlabel(xlabel, fontsize=14)
-        plt.ylabel(ylabel, fontsize=14)
+        plt.title(title, fontsize=18, fontweight='bold', pad=20)
+        plt.xlabel(xlabel, fontsize=16)
+        plt.ylabel(ylabel, fontsize=16)
         plt.tight_layout()
         
         # Save chart
         lang_suffix = "_zh" if language == "zh" else ""
         filename = f'difficulty_source_by_level{lang_suffix}.png'
-        filepath = os.path.join(self.output_dir, filename)
+        
+        # Try to use dialog for renaming if tkinter is available
+        try:
+            import tkinter as tk
+            from tkinter import simpledialog
+            root = tk.Tk()
+            root.withdraw()  # Hide the main window
+            renamed_filename = simpledialog.askstring("重命名文件", "请输入文件名:", initialvalue=filename)
+            root.destroy()
+            
+            if renamed_filename is None:  # User cancelled
+                print("File save cancelled by user")
+                plt.close()
+                return None
+            
+            if not renamed_filename.endswith('.png'):
+                renamed_filename += '.png'
+                
+            filepath = os.path.join(self.output_dir, renamed_filename)
+        except ImportError:
+            # If tkinter is not available, use the default filename
+            print("Warning: tkinter not available, using default filename")
+            filepath = os.path.join(self.output_dir, filename)
+        
         plt.savefig(filepath, dpi=300, bbox_inches='tight')
         plt.close()
         
-        print(f"Created difficulty source by level chart: {filename}")
+        print(f"Created difficulty source by level chart: {filepath}")
         return filepath
     
     def create_scores_heatmap(self, language: str = "en") -> Optional[str]:
@@ -300,12 +397,12 @@ class DataVisualizer:
         # Limit to first 12 score columns to avoid overly large plots
         selected_scores = score_columns[:12] if len(score_columns) > 12 else score_columns
         
-        # Calculate grid size
+        # Calculate grid size - use fewer columns to make plots larger
         n_scores = len(selected_scores)
-        n_cols = min(4, n_scores)
+        n_cols = min(3, n_scores)  # Reduce number of columns to make plots larger
         n_rows = (n_scores + n_cols - 1) // n_cols
         
-        fig, axes = plt.subplots(n_rows, n_cols, figsize=(5*n_cols, 4*n_rows))
+        fig, axes = plt.subplots(n_rows, n_cols, figsize=(6*n_cols, 5*n_rows))  # Increase size per subplot
         
         # Handle case where there's only one subplot
         if n_scores == 1:
@@ -322,13 +419,16 @@ class DataVisualizer:
                 # Set title based on language
                 col_title = col.replace("_", " ").title()
                 if language == "zh":
-                    axes[i].set_title(f'{col_title} 分布', fontweight='bold')
-                    axes[i].set_xlabel('等级')
-                    axes[i].set_ylabel('得分')
+                    axes[i].set_title(f'{col_title} 分布', fontweight='bold', fontsize=14)
+                    axes[i].set_xlabel('等级', fontsize=12)
+                    axes[i].set_ylabel('得分', fontsize=12)
                 else:
-                    axes[i].set_title(f'{col_title} Distribution', fontweight='bold')
-                    axes[i].set_xlabel('Level')
-                    axes[i].set_ylabel('Score')
+                    axes[i].set_title(f'{col_title} Distribution', fontweight='bold', fontsize=14)
+                    axes[i].set_xlabel('Level', fontsize=12)
+                    axes[i].set_ylabel('Score', fontsize=12)
+                
+                # Add grid for better readability
+                axes[i].grid(axis='y', color='lightgrey', linestyle='-', linewidth=0.5, alpha=0.7)
         
         # Hide any unused subplots
         for j in range(len(selected_scores), len(axes)):
@@ -336,20 +436,43 @@ class DataVisualizer:
         
         # Set suptitle based on language
         if language == "zh":
-            plt.suptitle('各等级得分分布', fontsize=16, fontweight='bold')
+            plt.suptitle('各等级得分分布', fontsize=18, fontweight='bold', y=0.98)
         else:
-            plt.suptitle('Score Distributions by Level', fontsize=16, fontweight='bold')
+            plt.suptitle('Score Distributions by Level', fontsize=18, fontweight='bold', y=0.98)
         
         plt.tight_layout()
         
         # Save chart
         lang_suffix = "_zh" if language == "zh" else ""
         filename = f'score_distributions_boxplot{lang_suffix}.png'
-        filepath = os.path.join(self.output_dir, filename)
+        
+        # Try to use dialog for renaming if tkinter is available
+        try:
+            import tkinter as tk
+            from tkinter import simpledialog
+            root = tk.Tk()
+            root.withdraw()  # Hide the main window
+            renamed_filename = simpledialog.askstring("重命名文件", "请输入文件名:", initialvalue=filename)
+            root.destroy()
+            
+            if renamed_filename is None:  # User cancelled
+                print("File save cancelled by user")
+                plt.close()
+                return None
+            
+            if not renamed_filename.endswith('.png'):
+                renamed_filename += '.png'
+                
+            filepath = os.path.join(self.output_dir, renamed_filename)
+        except ImportError:
+            # If tkinter is not available, use the default filename
+            print("Warning: tkinter not available, using default filename")
+            filepath = os.path.join(self.output_dir, filename)
+        
         plt.savefig(filepath, dpi=300, bbox_inches='tight')
         plt.close()
         
-        print(f"Created score distributions boxplot: {filename}")
+        print(f"Created score distributions boxplot: {filepath}")
         return filepath
     
     def create_radar_chart(self, language: str = "en") -> Optional[str]:
@@ -423,11 +546,34 @@ class DataVisualizer:
         # Save chart
         lang_suffix = "_zh" if language == "zh" else ""
         filename = f'radar_chart{lang_suffix}.png'
-        filepath = os.path.join(self.output_dir, filename)
+        
+        # Try to use dialog for renaming if tkinter is available
+        try:
+            import tkinter as tk
+            from tkinter import simpledialog
+            root = tk.Tk()
+            root.withdraw()  # Hide the main window
+            renamed_filename = simpledialog.askstring("重命名文件", "请输入文件名:", initialvalue=filename)
+            root.destroy()
+            
+            if renamed_filename is None:  # User cancelled
+                print("File save cancelled by user")
+                plt.close()
+                return None
+            
+            if not renamed_filename.endswith('.png'):
+                renamed_filename += '.png'
+                
+            filepath = os.path.join(self.output_dir, renamed_filename)
+        except ImportError:
+            # If tkinter is not available, use the default filename
+            print("Warning: tkinter not available, using default filename")
+            filepath = os.path.join(self.output_dir, filename)
+        
         plt.savefig(filepath, dpi=300, bbox_inches='tight')
         plt.close()
         
-        print(f"Created radar chart: {filename}")
+        print(f"Created radar chart: {filepath}")
         return filepath
     
     def create_all_visualizations(self, language: str = "en") -> List[str]:
@@ -458,10 +604,6 @@ class DataVisualizer:
         heatmap_chart = self.create_scores_heatmap(language)
         if heatmap_chart:
             charts.append(heatmap_chart)
-        
-        boxplot_chart = self.create_score_boxplots(language)
-        if boxplot_chart:
-            charts.append(boxplot_chart)
         
         radar_chart = self.create_radar_chart(language)
         if radar_chart:

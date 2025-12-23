@@ -13,6 +13,8 @@ from datetime import datetime
 from matplotlib.backends.backend_pdf import PdfPages
 import matplotlib.image as mpimg
 from typing import Dict, List, Optional
+import seaborn as sns
+# We'll import tkinter conditionally when needed
 
 
 class ReportGenerator:
@@ -66,10 +68,34 @@ class ReportGenerator:
         # Create a PDF report
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         lang_suffix = "_en" if language == "en" else "_zh"
-        report_filename = f'comprehensive_analysis_report{lang_suffix}_{timestamp}.pdf'
-        report_filepath = os.path.join(self.report_dir, report_filename)
+        default_filename = f'comprehensive_analysis_report{lang_suffix}_{timestamp}.pdf'
         
-        with PdfPages(report_filepath) as pdf:
+        # Try to use dialog for renaming if tkinter is available
+        try:
+            import tkinter as tk
+            from tkinter import simpledialog
+            root = tk.Tk()
+            root.withdraw()  # Hide the main window
+            renamed_filename = simpledialog.askstring("重命名文件", "请输入报告文件名:", initialvalue=default_filename)
+            root.destroy()
+            
+            if renamed_filename is None:  # User cancelled
+                print("Report generation cancelled by user")
+                return None
+            
+            if not renamed_filename.endswith('.pdf'):
+                renamed_filename += '.pdf'
+                
+            report_filepath = os.path.join(self.report_dir, renamed_filename)
+        except ImportError:
+            # If tkinter is not available, use the default filename
+            print("Warning: tkinter not available, using default filename")
+            report_filepath = os.path.join(self.report_dir, default_filename)
+        
+        # Create PDF with A4 page size (210mm x 297mm = 8.27in x 11.69in)
+        with PdfPages(report_filepath, 
+                      keep_empty=False, 
+                      metadata=None) as pdf:
             # Title Page
             self._create_title_page(pdf, language)
             
@@ -79,6 +105,9 @@ class ReportGenerator:
             
             # Add Statistics Tables
             self._add_statistics_tables(pdf, language)
+            
+            # Add detailed statistics by level
+            self._add_detailed_statistics_by_level(pdf, language)
         
         print(f"Comprehensive {language} report generated: {report_filepath}")
         return report_filepath
@@ -124,7 +153,7 @@ class ReportGenerator:
             ('difficulty_source_distribution', 'Difficulty Source Distribution', '主要困难来源分布'),
             ('difficulty_source_by_level', 'Difficulty Source Distribution by Level', '各等级困难来源分布'),
             ('scores_heatmap', 'Average Scores by Level', '各等级平均得分'),
-            ('score_distributions_boxplot', 'Score Distributions by Level', '各等级得分分布'),
+            # Removed score distributions boxplot
             ('radar_chart', 'Average Scores by Level - Radar Chart', '各等级平均得分 - 雷达图')
         ]
         
@@ -137,13 +166,13 @@ class ReportGenerator:
                 
                 if os.path.exists(img_path):
                     img = mpimg.imread(img_path)
-                    fig, ax = plt.subplots(figsize=(10, 8))
+                    fig, ax = plt.subplots(figsize=(12, 8))  # Increased figure size for better clarity in PDF
                     ax.imshow(img)
                     ax.axis('off')
                     
                     # Set title based on language
                     title = en_title if language == "en" else zh_title
-                    ax.set_title(title, fontsize=16, pad=20, weight='bold')
+                    ax.set_title(title, fontsize=18, pad=20, weight='bold')
                     
                     pdf.savefig()
                     plt.close()
@@ -212,7 +241,7 @@ class ReportGenerator:
                         cellLoc='center',
                         loc='center')
         table.auto_set_font_size(False)
-        table.set_fontsize(12)
+        table.set_fontsize(12)  # Increased font size
         table.scale(1.2, 1.5)
         ax.set_title(table_title, fontsize=16, pad=20, weight='bold')
         pdf.savefig()
@@ -253,7 +282,7 @@ class ReportGenerator:
                         cellLoc='center',
                         loc='center')
         table.auto_set_font_size(False)
-        table.set_fontsize(12)
+        table.set_fontsize(12)  # Increased font size
         table.scale(1.2, 1.5)
         ax.set_title(table_title, fontsize=16, pad=20, weight='bold')
         pdf.savefig()
@@ -303,20 +332,73 @@ class ReportGenerator:
                         cellLoc='center',
                         loc='center')
         table.auto_set_font_size(False)
-        table.set_fontsize(9)
+        table.set_fontsize(10)  # Increased font size
         table.scale(1.2, 1.5)
         ax.set_title(table_title, fontsize=16, pad=20, weight='bold')
         pdf.savefig()
         plt.close()
-
-
-def main():
-    """
-    Main function to demonstrate usage
-    """
-    # This would typically be called from the main analyzer
-    print("ReportGenerator module ready for use")
-
-
-if __name__ == "__main__":
-    main()
+    
+    def _add_detailed_statistics_by_level(self, pdf: PdfPages, language: str):
+        """
+        Add detailed statistics tables for each level to the report
+        
+        Args:
+            pdf (PdfPages): PDF document
+            language (str): Language for table titles
+        """
+        level_col = self.config['level_column']
+        if level_col not in self.df.columns:
+            return
+        
+        # Get unique levels
+        unique_levels = sorted(self.df[level_col].dropna().unique())
+        score_columns = self.get_score_columns()
+        
+        if not score_columns:
+            return
+        
+        # Create detailed statistics for each level
+        for level in unique_levels:
+            level_data = self.df[self.df[level_col] == level]
+            
+            fig, ax = plt.subplots(figsize=(14, min(10, len(score_columns) + 2)))
+            ax.axis('tight')
+            ax.axis('off')
+            
+            # Prepare statistics for this level
+            stats_data = []
+            for col in score_columns:
+                if col in level_data.columns:
+                    mean_val = level_data[col].mean()
+                    std_val = level_data[col].std()
+                    min_val = level_data[col].min()
+                    max_val = level_data[col].max()
+                    
+                    formatted_col = col.replace('_score', '').replace('_', ' ').title()
+                    
+                    stats_data.append([
+                        formatted_col,
+                        f"{mean_val:.3f}" if not np.isnan(mean_val) else "N/A",
+                        f"{std_val:.3f}" if not np.isnan(std_val) else "N/A",
+                        f"{min_val:.3f}" if not np.isnan(min_val) else "N/A",
+                        f"{max_val:.3f}" if not np.isnan(max_val) else "N/A"
+                    ])
+            
+            # Set column labels based on language
+            if language == "zh":
+                col_labels = ['维度', '均值', '标准差', '最小值', '最大值']
+                table_title = f'第 {level} 等级详细统计 (病例数: {len(level_data)})'
+            else:
+                col_labels = ['Dimension', 'Mean', 'Std Dev', 'Min', 'Max']
+                table_title = f'Detailed Statistics for Level {level} (Cases: {len(level_data)})'
+            
+            table = ax.table(cellText=stats_data,
+                            colLabels=col_labels,
+                            cellLoc='center',
+                            loc='center')
+            table.auto_set_font_size(False)
+            table.set_fontsize(10)  # Increased font size
+            table.scale(1.2, 1.5)
+            ax.set_title(table_title, fontsize=14, pad=20, weight='bold')
+            pdf.savefig()
+            plt.close()

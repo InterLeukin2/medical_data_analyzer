@@ -2,7 +2,8 @@
 Main Entry Point
 ===============
 
-This is the main entry point for the medical data analyzer application.
+This is the main entry point for the medical data analyzer application that supports
+CSV, Excel, JSON, and JSONL input formats.
 """
 
 import argparse
@@ -23,7 +24,7 @@ def main():
     Main function to run the medical data analyzer
     """
     parser = argparse.ArgumentParser(description='Medical Data Analyzer')
-    parser.add_argument('input_file', help='Input data file (CSV or Excel)')
+    parser.add_argument('input_file', help='Input data file (CSV, Excel, JSON, or JSONL)')
     parser.add_argument('--output-dir', default='output', help='Output directory')
     parser.add_argument('--viz-dir', default='visualizations', help='Visualization directory')
     parser.add_argument('--report-dir', default='reports', help='Report directory')

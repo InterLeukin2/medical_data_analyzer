@@ -6,7 +6,7 @@ A comprehensive tool for analyzing medical data with support for multiple format
 and customizable analysis parameters.
 
 Features:
-- Extract data from various file formats (CSV, Excel)
+- Extract data from various file formats (CSV, Excel, JSON, JSONL)
 - Perform statistical analysis on medical data
 - Generate visualizations (charts, graphs)
 - Create comprehensive PDF reports
@@ -78,8 +78,12 @@ class MedicalDataAnalyzer:
             self.df = pd.read_csv(self.data_file)
         elif self.data_file.endswith('.xlsx') or self.data_file.endswith('.xls'):
             self.df = pd.read_excel(self.data_file)
+        elif self.data_file.endswith('.json'):
+            self.df = pd.read_json(self.data_file)
+        elif self.data_file.endswith('.jsonl'):
+            self.df = pd.read_json(self.data_file, lines=True)
         else:
-            raise ValueError("Unsupported file format. Please provide CSV or Excel file.")
+            raise ValueError("Unsupported file format. Please provide CSV, Excel, JSON, or JSONL file.")
         
         print(f"Loaded {len(self.df)} records from {self.data_file}")
         return self.df
